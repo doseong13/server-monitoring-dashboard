@@ -6,8 +6,10 @@ import com.doseong13.servermonitoring.metric.repository.MetricRepository;
 import com.doseong13.servermonitoring.server.domain.Server;
 import com.doseong13.servermonitoring.server.repository.ServerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -29,7 +31,10 @@ public class MetricService {
         String agentKeyHash = hashAgentKey(agentKey);
 
         Server server = serverRepository.findByAgentKeyHash(agentKeyHash)
-                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 에이전트 키입니다."));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "유효하지 않은 에이전트 키입니다."
+                ));
 
         Metric metric = new Metric(
                 server,
@@ -48,11 +53,17 @@ public class MetricService {
 
     private void validateUsage(MetricCreateRequest request) {
         if (request.getMemoryUsedMb() > request.getMemoryTotalMb()) {
-            throw new IllegalArgumentException("메모리 사용량은 전체 메모리보다 클 수 없습니다.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "메모리 사용량은 전체 메모리보다 클 수 없습니다."
+            );
         }
 
         if (request.getDiskUsedMb() > request.getDiskTotalMb()) {
-            throw new IllegalArgumentException("디스크 사용량은 전체 디스크보다 클 수 없습니다.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "디스크 사용량은 전체 디스크보다 클 수 없습니다."
+            );
         }
     }
 
