@@ -10,6 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.doseong13.servermonitoring.metric.dto.LatestMetricResponse;
+import com.doseong13.servermonitoring.metric.service.MetricQueryService;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
@@ -22,9 +25,14 @@ import java.util.List;
 public class ServerController {
 
     private final ServerQueryService serverQueryService;
+    private final MetricQueryService metricQueryService;
 
-    public ServerController(ServerQueryService serverQueryService) {
+    public ServerController(
+            ServerQueryService serverQueryService,
+            MetricQueryService metricQueryService
+    ) {
         this.serverQueryService = serverQueryService;
+        this.metricQueryService = metricQueryService;
     }
 
     @Operation(
@@ -37,5 +45,23 @@ public class ServerController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ServerSummaryResponse> getServers() {
         return serverQueryService.getServers();
+    }
+
+    @Operation(
+            summary = "서버의 최신 지표 조회",
+            description = "특정 서버가 마지막으로 전송한 CPU, 메모리, 디스크 지표를 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "최신 지표 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "서버 또는 수집된 지표를 찾을 수 없음")
+    })
+    @GetMapping(
+            value = "/{serverId}/metrics/latest",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public LatestMetricResponse getLatestMetric(
+            @PathVariable Long serverId
+    ) {
+        return metricQueryService.getLatestMetric(serverId);
     }
 }
